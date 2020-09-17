@@ -10,7 +10,9 @@ import { LazyLoadingExample } from './components/LazyLoadingExample';
 import { RouterExample } from './components/RouterExample';
 import { StyledComponentsExample } from './components/StyledComponentsExample';
 import { UsersList } from './components/UsersList';
+import { UserCreate } from './components/UserCreate';
 import { WebTorrentRoute } from './components/WebTorrent';
+import { user, UserContext } from './context/User';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -25,28 +27,32 @@ const useStyles = makeStyles((theme: Theme) =>
   }),
 );
 
+
 export const App = () => {
   const classes = useStyles({});
 
   return (
-    <BrowserRouter>
-      <div className={classes.root}>
-        <CssBaseline />
-        <Header />
-        <SideMenu />
-        <main className={classes.main}>
-          <div className={classes.toolbar} />
-          <Switch>
-            <Route exact path='/' component={Home} />
-            <Route exact path='/usage' component={Usage} />
-            <Route path='/fetch-example' component={UsersList} />
-            <Route path='/lazy-example' component={LazyLoadingExample} />
-            <Route path='/styled-example' component={StyledComponentsExample} />
-            <Route path='/router-example/:slug' component={RouterExample} />
-            <Route path='/webtorrent' component={WebTorrentRoute} />
-          </Switch>
-        </main>
-      </div>
-    </BrowserRouter>
+    <UserContext.Provider value={user}>
+      <BrowserRouter>
+        <div className={classes.root}>
+          <CssBaseline />
+          <Header />
+          <SideMenu />
+          <main className={classes.main}>
+            <div className={classes.toolbar} />
+            <Switch>
+              <Route exact path='/' component={Home} />
+              <Route exact path='/usage' component={Usage} />
+              <Route path='/users' component={UsersList} />
+              <Route path='/create-user' component={UserCreate} />
+              <Route path='/lazy-example' component={LazyLoadingExample} />
+              <Route path='/styled-example' component={StyledComponentsExample} />
+              <Route path='/router-example/:slug' component={RouterExample} />
+              <Route path='/webtorrent' component={WebTorrentRoute} />
+            </Switch>
+          </main>
+        </div>
+      </BrowserRouter>
+    </UserContext.Provider>
   );
 };

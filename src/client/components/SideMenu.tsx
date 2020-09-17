@@ -58,11 +58,17 @@ export const SideMenu: React.FunctionComponent = () => {
       </List>
       <Divider />
       <List>
-        <ListItem button component={NavLinkMui} to='/fetch-example'>
+        <ListItem button component={NavLinkMui} to='/users'>
           <ListItemIcon>
             <FetchIcon />
           </ListItemIcon>
-          <ListItemText primary='Fetch' />
+          <ListItemText primary='Users' />
+        </ListItem>
+        <ListItem button component={NavLinkMui} to='/create-user'>
+          <ListItemIcon>
+            <RouterIcon />
+          </ListItemIcon>
+          <ListItemText primary='Create User' />
         </ListItem>
         <ListItem button component={NavLinkMui} to='/lazy-example'>
           <ListItemIcon>

@@ -1,3 +1,26 @@
+# Streemly
+
+diversethought.news
+alternativenews.tv
+bridge
+dissenter.tv
+dissident.to
+alternativevoices.me
+ayo.live
+ayo.gg
+ayo.stream
+ayo.watch
+ayo.team
+ayo.tube
+ayo.space
+vidya.tube
+vidyo.tube
+vidyo.stream
+silenced-majority.com
+
+## ideas
+add voting worm feature
+
 # FAST FullStack React with TypeScript starter kit.
 
 <img src="https://github.com/gilamran/fullstack-typescript/raw/master/assets/images/logo.png" width="150">
@@ -31,7 +54,7 @@ git push -u origin master
 - The client is bundled using [Webpack](https://webpack.github.io/) because it goes to the browser.
 - The server is emitted by [TypeScript](https://github.com/Microsoft/TypeScript) because node 6 supports es6.
 
-<p align="center"> 
+<p align="center">
 <img src="https://github.com/gilamran/fullstack-typescript/raw/master/assets/images/flow.png" width="500">
 </p>
 

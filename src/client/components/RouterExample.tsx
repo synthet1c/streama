@@ -8,7 +8,7 @@ import { useHistory, useLocation, useParams } from 'react-router-dom';
 export const RouterExample: React.FunctionComponent = () => {
   const history = useHistory();
   const location = useLocation();
-  const { slug } = useParams();
+  // const { slug } = useParams();
 
   return (
     <Card>
@@ -18,7 +18,7 @@ export const RouterExample: React.FunctionComponent = () => {
           location.pathname: <strong>{location.pathname}</strong>
         </Typography>
         <Typography>
-          &quot;slug&quot; parameter: <strong>{slug}</strong>
+          &quot;slug&quot; parameter: <strong>slug</strong>
         </Typography>
         <Button variant='contained' color='primary' onClick={() => history.goBack()}>
           history.goBack()

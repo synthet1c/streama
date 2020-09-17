@@ -14,6 +14,10 @@
     "lib": ["ES2019"],
     "moduleResolution": "node",
     "types": ["node"],
+    "typeRoots": [
+      "../../@types",
+      "../../node_modules/@types"
+    ],
     "incremental": true,
     "composite": true
   },
