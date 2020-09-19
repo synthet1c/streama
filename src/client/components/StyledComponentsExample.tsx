@@ -6,7 +6,7 @@ import React from 'react';
 import styled from 'styled-components';
 
 const CustomCardHeader = styled(CardHeader)`
-  background-color: bisque;
+  background-color: #2a2139;
 `;
 
 const CustomButton = styled(Button)`

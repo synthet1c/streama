@@ -22,6 +22,9 @@ export default class Node {
   public parent: Node;
   public backup: Node;
 
+  private timer: any
+  private total: number
+
   private _stream: Stream;
   private _connection: any;
 
@@ -35,6 +38,17 @@ export default class Node {
     this.io = io
     Node.nodes.set(sessionId, this);
     this.initSocketMessages();
+
+    this.total = 1
+    this.timedMessage()
+
+  }
+
+  public timedMessage = () => {
+    this.onMessage({ content: 'interval' })
+    if (this.total++ < 20) {
+      this.timer = setTimeout(this.timedMessage, 1000 + Math.random() * 5000)
+    }
   }
 
   public initSocketMessages() {
@@ -42,9 +56,15 @@ export default class Node {
     this.socket.on('healthCheck', this.onHealthCheck);
   }
 
-  public onMessage = ({ message }) => {
+  public onMessage = (message) => {
     console.log('Node:message', message);
-    this.io.sockets.emit('message', { message: message + 'mother licker' });
+    this.io.sockets.emit('message', {
+      id: (Date.now()).toString(16) + '-' + Math.floor(Math.random() * 500) + '-' + this.total,
+      createdAt: Date.now(),
+      content: 'What chu sa to me, huh? ' + this.total,
+      title: 'Reply',
+      user: 'AYO'
+    });
   };
 
   public onHealthCheck = ({ message }) => {

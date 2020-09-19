@@ -9,13 +9,6 @@ import LazyIcon from '@material-ui/icons/SystemUpdateAlt';
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 
-class NavLinkMui extends React.Component<any> {
-  render() {
-    const { forwardedRef, to, ...props } = this.props;
-    return <NavLink {...props} ref={forwardedRef} to={to} />;
-  }
-}
-
 const drawerWidth = 240;
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -42,53 +35,53 @@ export const SideMenu: React.FunctionComponent = () => {
       }}
     >
       <div className={classes.toolbar} />
-      <List>
-        <ListItem button component={NavLinkMui} to='/'>
+      <List dense={true}>
+        <ListItem button component={NavLink} to='/'>
           <ListItemIcon>
             <HomeIcon />
           </ListItemIcon>
           <ListItemText primary='Home' />
         </ListItem>
-        <ListItem button component={NavLinkMui} to='/usage'>
+        <ListItem button component={NavLink} to='/account'>
           <ListItemIcon>
             <UsageIcon />
           </ListItemIcon>
-          <ListItemText primary='Usage' />
+          <ListItemText primary='Account' />
         </ListItem>
-      </List>
-      <Divider />
-      <List>
-        <ListItem button component={NavLinkMui} to='/users'>
+        <ListItem button component={NavLink} to='/account/users'>
           <ListItemIcon>
             <FetchIcon />
           </ListItemIcon>
           <ListItemText primary='Users' />
         </ListItem>
-        <ListItem button component={NavLinkMui} to='/create-user'>
+        <ListItem button component={NavLink} to='/account/create-user'>
           <ListItemIcon>
             <RouterIcon />
           </ListItemIcon>
           <ListItemText primary='Create User' />
         </ListItem>
-        <ListItem button component={NavLinkMui} to='/lazy-example'>
+      </List>
+      <Divider />
+      <List>
+        <ListItem button component={NavLink} to='/lazy-example'>
           <ListItemIcon>
             <LazyIcon />
           </ListItemIcon>
           <ListItemText primary='Lazy Loading' />
         </ListItem>
-        <ListItem button component={NavLinkMui} to='/styled-example'>
+        <ListItem button component={NavLink} to='/styled-example'>
           <ListItemIcon>
             <StyledIcon />
           </ListItemIcon>
           <ListItemText primary='Styled Components' />
         </ListItem>
-        <ListItem button component={NavLinkMui} to='/router-example/1234'>
+        <ListItem button component={NavLink} to='/router-example/1234'>
           <ListItemIcon>
             <RouterIcon />
           </ListItemIcon>
           <ListItemText primary='React-Router' />
         </ListItem>
-        <ListItem button component={NavLinkMui} to='/webtorrent'>
+        <ListItem button component={NavLink} to='/webtorrent'>
           <ListItemIcon>
             <RouterIcon />
           </ListItemIcon>

@@ -5,12 +5,14 @@ export interface IUser {
   login: string
   email: string
   loggedIn: boolean
+  avatar: string
 }
 
 export const user: IUser = {
   name: 'Guest',
   login: '',
   email: '',
+  avatar: '',
   loggedIn: false,
 }
 

@@ -7,6 +7,7 @@ import session from 'express-session'
 import * as config from './config';
 import { createServer } from 'http'
 import socketIO, { Socket } from 'socket.io'
+import jsonParser from 'socket.io-json-parser'
 import { l337Crypt } from './utils/l337Cript';
 import dotenv from 'dotenv'
 
@@ -68,7 +69,13 @@ io.on('connection', (socket: Socket) => {
     io,
   })
 
-  socket.emit('message', 'Welcome!')
+  socket.emit('message', {
+    id: Date.now().toString(16),
+    createdAt: Date.now(),
+    content: 'Welcome!',
+    title: 'Welcome!',
+    user: 'AYO'
+})
 
   socket.on('disconnect', () => {
     manager.removeClient(trace('Client::disconnect')(Client.getBySessionId(socket.id)))

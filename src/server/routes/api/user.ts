@@ -5,9 +5,9 @@ import { mongoifyQuery } from '../../utils/mongoifyQuery';
 import { LEVELS } from '../../models/Group';
 import { authenticate } from '../../utils/authenticate';
 
-const userRouter = Router();
+export const router = Router();
 
-userRouter.post('/create', async (req: Request, res: Response) => {
+router.post('/create', async (req: Request, res: Response) => {
   try {
     const contact = await DB.Models.User.create({
       name: req.body.name,
@@ -33,7 +33,7 @@ userRouter.post('/create', async (req: Request, res: Response) => {
   }
 });
 
-userRouter.get('/clear', async (req: Request, res: Response) => {
+router.get('/clear', async (req: Request, res: Response) => {
 
   await DB.Models.User.collection.drop();
 
@@ -44,7 +44,7 @@ userRouter.get('/clear', async (req: Request, res: Response) => {
 });
 
 
-userRouter.get('/list', async (req: Request, res: Response) => {
+router.get('/list', async (req: Request, res: Response) => {
   const query = mongoifyQuery(req.query);
   try {
     const users = await DB.Models.User.find(query)
@@ -65,7 +65,7 @@ userRouter.get('/list', async (req: Request, res: Response) => {
   }
 });
 
-userRouter.get('/add-group', async (req: Request, res: Response) => {
+router.get('/add-group', async (req: Request, res: Response) => {
   try {
     const group = await DB.Models.Group.create({
       name: 'Foontas group',
@@ -95,7 +95,7 @@ userRouter.get('/add-group', async (req: Request, res: Response) => {
   }
 });
 
-userRouter.get('/login', async (req: Request, res: Response) => {
+router.get('/login', async (req: Request, res: Response) => {
   try {
     const user = await DB.Models.User.findOne({
       login: 'foonta',
@@ -114,7 +114,7 @@ userRouter.get('/login', async (req: Request, res: Response) => {
   }
 });
 
-userRouter.get('/logout', async (req: Request, res: Response) => {
+router.get('/logout', async (req: Request, res: Response) => {
   try {
     const user = await DB.Models.User.findOne({
       login: 'foonta',
@@ -134,7 +134,7 @@ userRouter.get('/logout', async (req: Request, res: Response) => {
 
 
 
-userRouter.get('/private', authenticate(LEVELS.GOD_MODE), (req: Request, res: Response) => {
+router.get('/private', authenticate(LEVELS.GOD_MODE), (req: Request, res: Response) => {
   res
     .status(200)
     .json({
@@ -147,7 +147,7 @@ userRouter.get('/private', authenticate(LEVELS.GOD_MODE), (req: Request, res: Re
 
 
 
-userRouter.get('/:userLogin', async (req: Request, res: Response) => {
+router.get('/:userLogin', async (req: Request, res: Response) => {
   try {
     const user = await DB.Models.User.findOne({
       login: req.params.userLogin,
@@ -172,6 +172,3 @@ userRouter.get('/:userLogin', async (req: Request, res: Response) => {
   }
 });
 
-export {
-  userRouter,
-};

@@ -9,13 +9,14 @@ import { NavLink, Route } from 'react-router-dom';
 import { IUserDTO } from '../../shared/IUserDTO';
 import { loadUsersAPI } from '../utils/api-facade';
 import { User } from './User';
+import { Link } from '@material-ui/core';
 
 interface IState {
   users: IUserDTO[];
   isLoading: boolean;
 }
 
-export class UsersList extends React.Component<any, IState> {
+export default class UsersList extends React.Component<any, IState> {
   constructor(props) {
     super(props);
     this.state = {
@@ -38,7 +39,9 @@ export class UsersList extends React.Component<any, IState> {
               <List>
                 {this.state.users.map((user) => (
                   <ListItem key={user.login}>
-                    <NavLink to={`/users/${user.login}`}>{user.name}</NavLink>
+                    <Link to={`/account/users/${user.login}`} component={NavLink}>
+                      {user.name}
+                    </Link>
                   </ListItem>
                 ))}
               </List>
@@ -48,7 +51,7 @@ export class UsersList extends React.Component<any, IState> {
         <Grid item xs={12}>
           <Route
             exact
-            path='/users/:login'
+            path='/account/users/:login'
             render={(props) => <User user={this.getUserById(props.match.params.login)} />}
           />
         </Grid>

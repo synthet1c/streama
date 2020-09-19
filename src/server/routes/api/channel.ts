@@ -2,11 +2,11 @@ import { Router, Request, Response } from 'express';
 import { DB } from '../../db/index';
 import { User } from '../../models/User';
 
-const channelRouter = Router();
+export const router = Router();
 
 const exclude = (...fields) => '-' + fields.join(' -')
 
-channelRouter.get('/list', async (req: Request, res: Response) => {
+router.get('/list', async (req: Request, res: Response) => {
   try {
     const channels = await DB.Models.Channel.find({})
       .select(exclude('__v', '_id'))
@@ -31,7 +31,7 @@ channelRouter.get('/list', async (req: Request, res: Response) => {
   }
 });
 
-channelRouter.get('/create', async (req: Request, res: Response) => {
+router.get('/create', async (req: Request, res: Response) => {
 
   const user = await DB.Models.User.findOne({
     login: 'foonta'
@@ -51,7 +51,7 @@ channelRouter.get('/create', async (req: Request, res: Response) => {
     });
 });
 
-channelRouter.get('/clear', async (req: Request, res: Response) => {
+router.get('/clear', async (req: Request, res: Response) => {
 
   await DB.Models.Channel.collection.drop()
 
@@ -63,7 +63,7 @@ channelRouter.get('/clear', async (req: Request, res: Response) => {
 
 
 
-channelRouter.get('/:slug', async (req: Request, res: Response) => {
+router.get('/:slug', async (req: Request, res: Response) => {
   try {
     const channel = await DB.Models.Channel
       .findOne({
@@ -98,4 +98,3 @@ channelRouter.get('/:slug', async (req: Request, res: Response) => {
   }
 });
 
-export { channelRouter };
