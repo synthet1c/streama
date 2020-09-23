@@ -32,7 +32,7 @@ export const Chat: React.FunctionComponent = () => {
         paper: classes.drawerPaper,
       }}
     >
-      {/*<div className={classes.toolbar} />*/}
+      <div className={classes.toolbar} />
       <Notifications/>
     </Drawer>
   );

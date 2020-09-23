@@ -18,7 +18,6 @@ export const renderRoutes = (routes: IRoute[]): any => {
         const Layout = route.layout || Fragment;
         const Component = route.component;
 
-        console.log('route', route)
         return (
           <Route
             key={i}

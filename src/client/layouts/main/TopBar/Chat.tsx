@@ -112,7 +112,7 @@ const Messages: FC = () => {
 
   return (
     <Box p={1} className={classes.container}>
-      <RootRef rootRef={scrollRef}>
+      <section ref={scrollRef}>
         <Box className={classes.top}>
           <List dense={false}>
             {messages.map((message) => {
@@ -142,7 +142,7 @@ const Messages: FC = () => {
             })}
           </List>
         </Box>
-      </RootRef>
+      </section>
       <Box className={classes.input}>
         <Paper>
           <TextField fullWidth label="Say Something" />

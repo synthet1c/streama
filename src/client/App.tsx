@@ -21,6 +21,11 @@ import MainLayout from './layouts/MainLayout';
 import store from './store';
 import { Provider } from 'react-redux';
 import WebSocketProvider from './providers/WebSocket';
+import WebRTCProvider from './providers/WebRTC';
+// import WebRTCProvider from './providers/WebRTCFC2';
+// import WebRTCProvider from './providers/NewWebRTC';
+
+// const WebRTCProvider = React.Fragment
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -44,80 +49,82 @@ export const App = () => {
   return (
     <Provider store={store}>
       <WebSocketProvider>
-        <UserContext.Provider value={user}>
-          <ThemeProvider theme={theme}>
-            <BrowserRouter>
-              <div className={classes.root}>
-                <CssBaseline />
-                <Header />
-                <SideMenu />
-                <main className={classes.main}>
-                  <div className={classes.toolbar} />
-                  <Switch>
-                    {renderRoutes([
-                      {
-                        path: '/',
-                        component: Home,
-                        exact: true,
-                      },
-                      {
-                        path: '/usage',
-                        component: Usage,
-                        exact: true,
-                      },
-                      {
-                        path: '/account',
-                        layout: MainLayout,
-                        routes: [
-                          {
-                            path: '/account',
-                            component: Account,
-                            exact: true,
-                          },
-                          {
-                            path: '/account/users',
-                            component: UsersList,
-                          },
-                          {
-                            path: '/account/create-user',
-                            component: UserCreate,
-                          },
-                        ],
-                      },
-                      {
-                        path: '/create-user',
-                        component: UserCreate,
-                        exact: true,
-                      },
+        <WebRTCProvider>
+          <UserContext.Provider value={user}>
+            <ThemeProvider theme={theme}>
+              <BrowserRouter>
+                <div className={classes.root}>
+                  <CssBaseline />
+                  <Header />
+                  <SideMenu />
+                  <main className={classes.main}>
+                    <div className={classes.toolbar} />
+                    <Switch>
+                      {renderRoutes([
+                        {
+                          path: '/',
+                          component: Home,
+                          exact: true,
+                        },
+                        {
+                          path: '/usage',
+                          component: Usage,
+                          exact: true,
+                        },
+                        {
+                          path: '/account',
+                          layout: MainLayout,
+                          routes: [
+                            {
+                              path: '/account',
+                              component: Account,
+                              exact: true,
+                            },
+                            {
+                              path: '/account/users',
+                              component: UsersList,
+                            },
+                            {
+                              path: '/account/create-user',
+                              component: UserCreate,
+                            },
+                          ],
+                        },
+                        {
+                          path: '/create-user',
+                          component: UserCreate,
+                          exact: true,
+                        },
 
-                      {
-                        path: '/lazy-example',
-                        component: LazyLoadingExample,
-                        exact: true,
-                      },
-                      {
-                        path: '/styled-example',
-                        component: StyledComponentsExample,
-                        exact: true,
-                      },
-                      {
-                        path: '/router-example/:slug',
-                        component: RouterExample,
-                        exact: true,
-                      },
-                      {
-                        path: '/webtorrent',
-                        component: WebTorrentRoute,
-                        exact: true,
-                      },
-                    ])}
-                  </Switch>
-                </main>
-                <Chat />
-              </div>
-            </BrowserRouter>
-          </ThemeProvider>
-        </UserContext.Provider>
+                        {
+                          path: '/lazy-example',
+                          component: LazyLoadingExample,
+                          exact: true,
+                        },
+                        {
+                          path: '/styled-example',
+                          component: StyledComponentsExample,
+                          exact: true,
+                        },
+                        {
+                          path: '/router-example/:slug',
+                          component: RouterExample,
+                          exact: true,
+                        },
+                        {
+                          path: '/webtorrent',
+                          component: WebTorrentRoute,
+                          exact: true,
+                        },
+                      ])}
+                    </Switch>
+                  </main>
+                  <Chat />
+                </div>
+              </BrowserRouter>
+            </ThemeProvider>
+          </UserContext.Provider>
+        </WebRTCProvider>
       </WebSocketProvider>
     </Provider>
   );

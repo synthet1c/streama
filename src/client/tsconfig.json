@@ -9,6 +9,7 @@
     "noEmit": true,
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
     "isolatedModules": true,
     "outDir": "../../dist/client",
     "lib": ["ES2019", "DOM"],

@@ -36,6 +36,10 @@ const sessionMiddleware = session({
   cookie: {
     secure: false,
     sameSite: true,
+  },
+  genid: (req: Request) => {
+    console.log('Session id', req.query.name)
+    return String(req.query.name)
   }
 })
 
@@ -65,6 +69,8 @@ io.on('connection', (socket: Socket) => {
 
   const node = new Node({
     sessionId: socket.request.sessionID,
+    req: socket.request,
+    res: socket.request.res,
     socket,
     io,
   })
@@ -77,11 +83,12 @@ io.on('connection', (socket: Socket) => {
     user: 'AYO'
 })
 
-  socket.on('disconnect', () => {
-    manager.removeClient(trace('Client::disconnect')(Client.getBySessionId(socket.id)))
-    console.log('io:disconnected', socket, manager)
-  })
+  // socket.on('disconnect', () => {
+  //   manager.removeClient(trace('Client::disconnect')(Client.getBySessionId(socket.id)))
+  //   console.log('io:disconnected', socket, manager)
+  // })
 })
+
 
 // app.use(useClient())
 

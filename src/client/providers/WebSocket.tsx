@@ -21,12 +21,12 @@ const WebSocketProvider = ({ children }: WebSocketProps): any => {
     const payload = {
       message
     }
-    socket.emit('message', message)
+    // socket.emit('message', message)
     dispatch(updateChatLog(message))
   }
 
   socket.on('message', (message) => {
-    console.log('socket.io::message', message)
+    // console.log('socket.io::message', message)
     dispatch(updateChatLog(message))
   })
 

@@ -10,6 +10,11 @@ import { IUserDTO } from '../../shared/IUserDTO';
 import { loadUsersAPI } from '../utils/api-facade';
 import { User } from './User';
 import { Link } from '@material-ui/core';
+// import Room from './Room';
+import RTCChat from './RTCChat'
+// import SinglePageChat from './SinglePageFunctionalChat';
+// import SinglePageChat from './SinglePageChat';
+import WebRTC2 from '../providers/WebRTC2';
 
 interface IState {
   users: IUserDTO[];
@@ -49,6 +54,13 @@ export default class UsersList extends React.Component<any, IState> {
           </Card>
         </Grid>
         <Grid item xs={12}>
+          {/*<SinglePageChat/>*/}
+          <WebRTC2 />
+        </Grid>
+        <Grid item xs={12}>
+          <RTCChat />
+        </Grid>
+        <Grid item xs={12}>
           <Route
             exact
             path='/account/users/:login'
@@ -61,6 +73,7 @@ export default class UsersList extends React.Component<any, IState> {
 
   public async componentDidMount() {
     const users = await loadUsersAPI();
+    // @ts-ignore
     this.setState({ users: users.data, isLoading: false });
   }
 
