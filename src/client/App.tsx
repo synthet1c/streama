@@ -4,7 +4,7 @@ import React, { lazy } from 'react';
 import { BrowserRouter, Route, Switch } from 'react-router-dom'; // Pages
 import { Header } from './components/Header';
 import { SideMenu } from './components/SideMenu';
-import { Chat } from './components/Chat';
+// import { Chat } from './components/Chat';
 import { Home } from './components/Home';
 import { Usage } from './components/Usage';
 import { LazyLoadingExample } from './components/LazyLoadingExample';
@@ -119,7 +119,7 @@ export const App = () => {
                       ])}
                     </Switch>
                   </main>
-                  <Chat />
+                  {/*<Chat />*/}
                 </div>
               </BrowserRouter>
             </ThemeProvider>

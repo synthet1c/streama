@@ -7,6 +7,7 @@ export interface Subscription {
   name: string;
   propertyKey: string;
   callback: (message: IMessage) => void;
+  source: string
 }
 
 export interface IMessenger {
@@ -23,8 +24,15 @@ export const messenger = <T extends { new(...args: any[]): {} }>(
   constructor: T,
 ) => {
   return class Messenger extends constructor {
-    messageSubscriptions: Subscription[];
+    messageSubscriptions: {
+      [key: string]: Subscription[]
+    };
     decorated: boolean = false
+
+    constructor(...args: any[]) {
+      super(...args)
+      this.decorate()
+    }
 
     decorate(this: any) {
       this.decorated = true
@@ -62,9 +70,9 @@ export const messenger = <T extends { new(...args: any[]): {} }>(
      */
     public on = (event: string, callback: (message: IMessage) => void | any, source?: string) => {
       if (!this.messageSubscriptions[event]) {
-        this.messageSubscriptions[event] = {};
+        this.messageSubscriptions[event] = [];
       }
-      this.messageSubscriptions[event].push({ event, callback, source } as IMessageSubscription);
+      this.messageSubscriptions[event].push({ name, callback, source, propertyKey: name } as Subscription);
     };
 
 
@@ -74,10 +82,10 @@ export const messenger = <T extends { new(...args: any[]): {} }>(
      * @param callback
      * @param source
      */
-    public off = (event: string, callback: () => void | any, source: string) => {
+    public off = (event: string, callback: () => void | any, source?: string) => {
       this.messageSubscriptions[event] = this.messageSubscriptions[event].filter(
         obj =>
-          event === obj.event
+          event === obj.name
           && (callback ? obj.callback === callback : true)
           && (source ? obj.source === source : true),
       );
@@ -117,6 +125,7 @@ export function onMessage(name: string) {
         propertyKey,
         name,
         callback: method.bind(this),
+        source: ''
       } as Subscription);
 
       // reassign the method to a trigger

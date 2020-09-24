@@ -2,6 +2,7 @@ import { UserID } from './types';
 import DataChannel, { ChannelID } from './DataChannel';
 import { IMessage, IMessageSubscription, IMessageSubscriptions } from './interfaces';
 import { Socket } from 'socket.io';
+import { trace } from '../../shared/trace';
 
 const tap = fn => x => (fn(x), x);
 
@@ -42,7 +43,8 @@ export default class Peer {
     this.connection.onconnectionstatechange = (event: any) => {
       switch (event.currentTarget.connectionState) {
         case 'connected':
-          return res(this);
+          return true
+          // return res(this);
         case 'disconnected':
         case 'closed':
           return this.cleanup();
@@ -71,6 +73,12 @@ export default class Peer {
     await peer.init(res, rej);
     peer.data = peer.connection.createDataChannel('chat');
     peer.data.addEventListener('message', messageCallback)
+    peer.data.addEventListener('open', peer.dataChannelOpen)
+
+    socket.on('new-ice-candidate', async (message: IMessage) => {
+      await peer.connection.addIceCandidate(message.payload.candidate);
+    })
+
     peer.connection.onnegotiationneeded = async (e) => {
       await peer.connection.createOffer()
         .then(tap(d => peer.connection.setLocalDescription(d)))
@@ -105,7 +113,8 @@ export default class Peer {
     await peer.init(res, rej);
     peer.connection.ondatachannel = (event) => {
       peer.data = event.channel;
-      peer.data.addEventListener('message', peer.onMessageCallback(dataCallback))
+      peer.data.addEventListener('message', peer.onMessageCallback(dataCallback).bind(peer))
+      peer.data.addEventListener('open', peer.dataChannelOpen)
       res(peer);
     };
     peer.connection.setRemoteDescription(offer)
@@ -117,18 +126,24 @@ export default class Peer {
           })
           .then(tap(peer.sendAnswer));
       });
+
+    socket.on('new-ice-candidate', async (message: IMessage) => {
+      await peer.connection.addIceCandidate(message.payload.candidate);
+    })
   });
 
 
-  private onMessageCallback = (nodeCallback) => (event: MessageEvent) => {
-    const message: IMessage = JSON.parse(event.data)
-    // intercept the message
-    if (this.messageSubscriptions[message.type]) {
-      this.messageSubscriptions[message.type].forEach(event => {
-        event.callback(message);
-      });
-    } else {
-      nodeCallback(event)
+  private onMessageCallback(nodeCallback) {
+    return function(this: Peer, event: MessageEvent) {
+      const message: IMessage = JSON.parse(event.data)
+      // intercept the message
+      if (this.messageSubscriptions && typeof this.messageSubscriptions[message.type] !== 'undefined') {
+        this.messageSubscriptions[message.type].forEach(event => {
+          event.callback(message);
+        });
+      } else {
+        nodeCallback(event)
+      }
     }
   }
 
@@ -140,7 +155,9 @@ export default class Peer {
         origin: this.userId,
         target: this.id,
         from: this.userId,
-        payload: null,
+        payload: {
+          candidate: event.candidate
+        },
         created: (new Date()).toISOString(),
         isPrivate: true,
       });
@@ -149,8 +166,8 @@ export default class Peer {
 
 
   private sendOffer = async (description: RTCSessionDescription): Promise<{ answer: RTCSessionDescription }> => new Promise((res, rej) => {
-    this.socket.emit('offer', {
-      type: 'offer',
+    this.socket.emit('offer:host', {
+      type: 'offer:host',
       origin: this.userId,
       target: this.id,
       payload: {
@@ -166,8 +183,8 @@ export default class Peer {
   private sendAnswer = async ({ answer }) => {
     await this.socket.emit('answer', {
       type: 'answer',
-      origin: this.id,
-      target: this.userId,
+      origin: this.userId,
+      target: this.id,
       payload: {
         answer,
       },
@@ -175,6 +192,11 @@ export default class Peer {
       isPrivate: true,
     });
   };
+
+
+  private dataChannelOpen = e => {
+    console.log('data channel open', e)
+  }
 
 
   private cleanup() {

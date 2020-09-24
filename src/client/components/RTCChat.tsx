@@ -20,8 +20,11 @@ export default class RTCChat extends Component {
   componentDidMount() {
     this.context.subscribe(message => {
       console.log('webrtc:message', message)
+      this.setState(state => ({
+        ...state,
+        messages: this.state.messages.concat(message)
+      }))
     })
-    // this.sendMessage('Sup RCT boi')
   }
 
   sendMessage = (event) => {

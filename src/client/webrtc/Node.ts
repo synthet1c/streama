@@ -10,14 +10,14 @@ import {
 } from './interfaces';
 import Peer from './Peer';
 import Member from './Member';
-import { IMessenger, messenger, onMessage } from './decorators/messenger';
+import { IMessenger, messenger, onMessage, Subscription } from './decorators/messenger';
 
 export interface ICreateNodeParams {
   socket: Socket
 }
 
 @messenger
-export default class Node implements IMessenger {
+export default class Node {
 
   isHost: boolean;
 
@@ -58,10 +58,18 @@ export default class Node implements IMessenger {
   quality: 1080 | 720 | 420 | 'audio';
 
   // methods from IMessenger
-  decorate: () => void;
-  trigger: (this: any, name: string, message: IMessage) => void;
+  // decorate: () => void;
+  // trigger: (this: any, name: string, message: IMessage) => void;
   on: (event: string, callback: (message) => void| any, source?: string) => void
-  off: (event: string, callback: () => void | any, source: string) => void
+  off: (event: string, callback: () => void | any, source?: string) => void
+
+  trigger(this: any, name: string, message: IMessage) {
+    const subscriptions: Subscription[] = this.messageSubscriptions[name] || [];
+    // boot the subscriptions
+    return subscriptions.map(({ propertyKey, name, callback }) => {
+      return callback(message);
+    });
+  }
 
   /**
    * !!! IMPORTANT !!! Do not use constructor, use Node.create as it's asynchronous
@@ -78,20 +86,33 @@ export default class Node implements IMessenger {
    * @param {ICreateNodeParams} params
    * @returns {Promise<Node>}
    */
-  public static create = (params: ICreateNodeParams): Promise<Node> => new Promise(async (res, rej) => {
+  public static create = (params: ICreateNodeParams): Node => {
     // initialize socket
     // wait for communication from server
     // create peer connections
     const node = new Node(params);
     // pass the resolve function that will fire when the server has joined the Node to a room
-    await node.bindSocketEvents(res);
+    // await node.bindSocketEvents(res);
 
     return node
-  });
+  };
+
+  public init = async () => new Promise((res, rej) => {
+    this.bindSocketEvents(res)
+  })
 
   public disconnect = () => {
     console.log('disconnect from server')
   }
+
+  public subscribe = (fn) => this.on('message', fn)
+  public unsubscribe = (fn) => this.off('message', fn)
+  public sendMessage = (message) => this.send('message', null, {
+    type: 'message',
+    payload: {
+      message
+    }
+  })
 
 
   private bindSocketEvents(res) {
@@ -103,14 +124,17 @@ export default class Node implements IMessenger {
     }));
     this.socket.on('createRoom', async (message: IMessage) => {
       await this.handleCreateRoom(message);
+      this.connected = true
       // resolve Node.create as the user has successfully joined the network
       res(this);
     });
     this.socket.on('joinRoom', async (message: IMessage) => {
       await this.handleJoinRoom(message);
       // resolve Node.create as client is connected to the hast
+      this.connected = true
       res(this);
     });
+    this.socket.on('setAsHost', this.handleSetAsHost);
     this.socket.on('hostChange', this.handleHostChange);
     this.socket.on('addPeer', this.handleAddPeer);
     this.socket.on('offer:host', this.handleReceiveHostOffer);
@@ -169,14 +193,14 @@ export default class Node implements IMessenger {
    * @param payload
    * @param isPrivate
    */
-  private send = async (name: string, target: UserID | null, payload: IMessagePartial, isPrivate?: boolean) => {
+  public send = async (name: string, target: UserID | null, payload: IMessagePartial, isPrivate?: boolean) => {
     const message: IMessage = this.createMessage({
       type: name,
       target,
-      payload,
+      ...payload,
       ...(isPrivate && { isPrivate: true }),
     });
-    if (!target || !this.connected) {
+    if (!this.connected) {
       // send message using Server SocketIO
       this.socket.emit('message', message);
     } else if (isPrivate) {
@@ -211,11 +235,15 @@ export default class Node implements IMessenger {
       }
     }
     // send the signal up the tree
-    this.host.send({
-      ...message,
-      ...(isPrivate && { isPrivate: true }),
-      from: this.id,
-    });
+    if (this.host) {
+      this.host.send({
+        ...message,
+        ...(isPrivate && { isPrivate: true }),
+        from: this.id,
+      });
+    } else {
+      // send message to server to be saved to database
+    }
   };
 
 
@@ -247,11 +275,14 @@ export default class Node implements IMessenger {
    */
   private messageCallback = (event: MessageEvent) => {
     const message: IMessage = JSON.parse(event.data);
+    console.log('message', message)
     // trigger any message subscriptions
     this.trigger(message.type, message);
     // send the message to all child nodes
     if (this.isHost) {
       this.broadcast(message);
+    } else {
+      this.send(message.type, message.target, message,true)
     }
   };
 
@@ -265,10 +296,24 @@ export default class Node implements IMessenger {
     });
   };
 
+  @onMessage('request:backupHost')
+  protected requestBackupHost(message: IMessage) {
+    this.send('provide:backupHost', message.origin, this.createMessage({
+      ...message,
+      type: 'provide:backupHost',
+      target: message.origin,
+      payload: {
+        backupId: this.id
+      },
+    }), true);
+  }
+
+
 
   @onMessage('provide:backupHost')
   protected async provideBackupHost(message: IMessage) {
-    this.backup = await this.getPeer(message.payload.backupId, false);
+    console.log('provideBackupHost', message)
+    // this.backup = await this.getPeer(message.payload.backupId, false);
   }
 
 
@@ -319,17 +364,35 @@ export default class Node implements IMessenger {
   }
 
 
+  /**
+   * Offer from a host, create a host connection that will provide the stream data
+   * @param message
+   */
   private handleReceiveHostOffer = async (message: IMessage) => {
     this.host = await Peer.createHostConnection({
       userId: this.id,
-      peerId: message.payload.peerId,
+      peerId: message.origin,
       socket: this.socket,
       offer: message.payload.offer,
       dataCallback: this.messageCallback,
-    });
+    })
+
+    console.log('Node', this)
+
+    /**
     this.host.send(this.createMessage({
       type: 'request:backupHost',
       target: this.host.id,
+      isPrivate: true,
+    }));
+    */
+
+    this.host.send(this.createMessage({
+      type: 'hello',
+      target: this.host.id,
+      payload: {
+        message: 'Hello!'
+      },
       isPrivate: true,
     }));
   };
@@ -358,6 +421,8 @@ export default class Node implements IMessenger {
    */
   private handleCreateRoom = async (message: IMessage) => {
     // connect to the server and start downloading the stream
+    this.id = message.payload.userId
+    this.isHost = true
   };
 
   /**
@@ -365,7 +430,8 @@ export default class Node implements IMessenger {
    * @param message
    */
   private handleJoinRoom = async (message: IMessage) => {
-
+    this.id = message.payload.userId
+    this.isHost = false
   };
 
   /**
@@ -373,18 +439,30 @@ export default class Node implements IMessenger {
    * @param message
    */
   private handleHostChange = (message: IMessage) => {
+    console.log('handleHostChange', message)
+    if (message.payload.isHost) {
+    }
+  };
 
+
+  private handleSetAsHost = (message: IMessage) => {
+    console.log('handleSetAsHost', message)
+    if (message.payload.isHost) {
+      this.isHost = true
+      this.host = null
+    }
   };
 
 
   private handleAddPeer = async (message: IMessage) => {
+    console.log('addPeer', message)
     if (this.isHost && message.target === this.id) {
       // establish a new connection
-      await this.getPeer(message.target);
+      await this.getPeer(message.payload.guest);
     } else {
       // add a new member, no need to create a connection as the host will do it
-      if (!this.members.has(message.target)) {
-        this.members.set(message.origin, new Member(message.payload));
+      if (!this.members.has(message.payload.guest)) {
+        this.members.set(message.payload.guest, new Member(message.payload.guest));
       }
     }
   };

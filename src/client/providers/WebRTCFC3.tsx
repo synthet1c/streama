@@ -1,9 +1,14 @@
-import React, { createContext, MutableRefObject, Ref, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext,
+  useContext,
+  useEffect,
+  useState,
+  Suspense,
+} from 'react';
 import { WebSocketContext } from './WebSocket';
 
-import Node from '../webrtc/Node'
+import Node from '../webrtc/Node';
 
-export const WebRTCContext = createContext(null)
+export const WebRTCContext = createContext(null);
 
 export type SocketID = string
 
@@ -13,36 +18,32 @@ export interface IWebRTCCredentials {
 
 const WebRTCProvider = ({ children }) => {
 
-  const [connected, setConnected] = useState(false)
+  const [connected, setConnected] = useState(false);
+  const [api, setApi] = useState({})
 
-  const ws = useContext(WebSocketContext)
+  const ws = useContext(WebSocketContext);
 
-  let webRTCConnection = {
-    node: null
-  }
+  let node = Node.create({
+    socket: ws.socket,
+  })
 
   useEffect(() => {
-    Node.create({
-      socket: ws.socket,
-    })
-      .then((node) => {
-        webRTCConnection.node = node
-        setConnected(true)
-      })
-
+    node.init()
+    console.log({ node })
     return () => {
-      webRTCConnection.node.disconnect()
-    }
-  }, [])
-
+      // node.disconnect();
+    };
+  }, []);
 
   return (
-    <WebRTCContext.Provider value={webRTCConnection}>
-      {connected ? children : <h1>Connecting</h1>}
-    </WebRTCContext.Provider>
-  )
+    <Suspense fallback={<h1>Connecting</h1>}>
+      <WebRTCContext.Provider value={node}>
+        {children}
+      </WebRTCContext.Provider>
+    </Suspense>
+  );
 
-}
+};
 
 
-export default WebRTCProvider
+export default WebRTCProvider;

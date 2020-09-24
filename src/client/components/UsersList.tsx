@@ -14,7 +14,7 @@ import { Link } from '@material-ui/core';
 import RTCChat from './RTCChat'
 // import SinglePageChat from './SinglePageFunctionalChat';
 // import SinglePageChat from './SinglePageChat';
-import WebRTC2 from '../providers/WebRTC2';
+// import WebRTC2 from '../providers/WebRTC2';
 
 interface IState {
   users: IUserDTO[];
@@ -55,7 +55,7 @@ export default class UsersList extends React.Component<any, IState> {
         </Grid>
         <Grid item xs={12}>
           {/*<SinglePageChat/>*/}
-          <WebRTC2 />
+          {/*<WebRTC2 />*/}
         </Grid>
         <Grid item xs={12}>
           <RTCChat />
