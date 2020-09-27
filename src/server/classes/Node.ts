@@ -1,6 +1,10 @@
 import { Socket, Server } from 'socket.io';
 import { Stream } from 'stream';
 import { trace } from '../../shared/trace';
+import ffmpeg from 'fluent-ffmpeg'
+import path from 'path';
+import ss from 'socket.io-stream'
+import * as fs from 'fs';
 
 type SessionID = string
 type UserID = string
@@ -30,9 +34,11 @@ class Room {
   host: string
   members: string[] = []
   guests: string[] = []
+  socket: Socket
 
-  constructor(io, roomID, host) {
+  constructor(io, roomID, host, socket) {
     this.io = io
+    this.socket = socket
     this.roomID = roomID
     this.host = host
     this.members.push(host)
@@ -49,9 +55,69 @@ class Room {
         userId: host,
       },
     })
+
+    this.streamVideo()
+    // this.testStream()
   }
 
-  decorate: () => void
+  public testStream() {
+    ss(this.socket).on('profile-image', function(stream, data) {
+      var filename = path.basename(data.name);
+      stream.pipe(fs.createWriteStream(filename));
+    });
+
+    var stream = ss.createStream();
+    var filename = './assets/aprincenebula.jpg';
+
+    ss(this.socket).emit('profile-image', stream, {name: filename});
+    fs.createReadStream(filename).pipe(stream);
+  }
+
+  public streamVideo() {
+    const stream = ss.createStream()
+    // var proc = ffmpeg(path.resolve(process.cwd(), './assets/keyboardcat.mp4'))
+    //   // use the 'flashvideo' preset (located in /lib/presets/flashvideo.js)
+    //   // .preset('flashvideo')
+    //   // setup event handlers
+    //   .on('end', function() {
+    //     console.log('file has been converted succesfully');
+    //   })
+    //   .on('error', function(err) {
+    //     console.log('an error happened: ' + err.message);
+    //   })
+    //   // save to stream
+    //   .pipe(stream, {end:true}); //end = true, close output stream after writing
+    console.log('streamVideo', stream)
+    this.io.to(this.host).emit('message', {
+      type: 'message',
+      origin: 'server',
+      target: this.host,
+      from: 'server',
+      isPrivate: true,
+      created: (new Date()).toISOString(),
+      payload: {
+        message: 'About to start stream',
+      },
+    })
+    ss(this.socket).on('stream', function(stream, data) {
+      var filename = path.basename(data.name);
+      stream.pipe(fs.createWriteStream(filename));
+    });
+
+    ss(this.socket).emit('stream', stream)
+
+    const readStream = fs.createReadStream(path.resolve(process.cwd(), './assets/keyboardcat.mp4')).pipe(stream)
+
+    readStream.on('open', (arg) => {
+      console.log('readStream:open', arg)
+    })
+
+    readStream.on('close', (arg) => {
+      console.log('readStream:close', arg)
+    })
+    console.log({ readStream })
+  }
+
 
   messageHost(message: IMessage) {
     this.io.to(this.host).emit(message.type, message)
@@ -92,6 +158,7 @@ class Room {
     })
   }
 
+
   removeUser(user): string[] {
     const actions = []
     if (this.host === user) {
@@ -125,6 +192,7 @@ class Room {
           host: this.host
         },
       })
+      this.streamVideo()
       if (~this.guests.indexOf(this.host)) {
         this.guests.splice(this.guests.indexOf(this.host), 1)
       }
@@ -211,7 +279,7 @@ export default class Node {
     socket.on('createOrJoinRoom', ({ payload }: IMessage) => {
       let room = rooms[payload.roomID]
       if (!room) {
-        room = rooms[payload.roomID] = new Room(io, payload.roomID, socket.id)
+        room = rooms[payload.roomID] = new Room(io, payload.roomID, socket.id, socket)
         console.log('created room', socket.id, room)
       } else {
         room.addGuest(socket.id)

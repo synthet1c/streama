@@ -3,6 +3,8 @@ import DataChannel, { ChannelID } from './DataChannel';
 import { IMessage, IMessageSubscription, IMessageSubscriptions } from './interfaces';
 import { Socket } from 'socket.io';
 import { trace } from '../../shared/trace';
+import BSON from 'bson'
+import Buffer from 'buffer'
 
 const tap = fn => x => (fn(x), x);
 
@@ -135,7 +137,7 @@ export default class Peer {
 
   private onMessageCallback(nodeCallback) {
     return function(this: Peer, event: MessageEvent) {
-      const message: IMessage = JSON.parse(event.data)
+      const message: IMessage = BSON.deserialize(event.data)
       // intercept the message
       if (this.messageSubscriptions && typeof this.messageSubscriptions[message.type] !== 'undefined') {
         this.messageSubscriptions[message.type].forEach(event => {
@@ -233,7 +235,11 @@ export default class Peer {
 
 
   public send(message: IMessage) {
-    this.data.send(JSON.stringify(message));
+    this.data.send(BSON.serialize(message));
+  }
+
+  public sendData(data: ArrayBuffer) {
+    this.data.send(BSON.serialize(data))
   }
 
 

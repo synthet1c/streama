@@ -12,6 +12,7 @@ import React from 'react';
 import { WebTorrent } from 'webtorrent';
 import io, { Socket } from 'socket.io-client';
 import SendIcon from '@material-ui/icons/Send';
+import Video from './Video';
 
 interface iWebTorrentState {
   messages: iSocketMessage[]
@@ -112,6 +113,9 @@ export class WebTorrentRoute extends React.Component {
               </List>
             </CardContent>
           </Card>
+        </Grid>
+        <Grid item xs={12}>
+          <Video />
         </Grid>
       </Grid>
 

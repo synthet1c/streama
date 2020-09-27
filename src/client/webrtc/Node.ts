@@ -139,6 +139,8 @@ export default class Node {
     this.socket.on('addPeer', this.handleAddPeer);
     this.socket.on('offer:host', this.handleReceiveHostOffer);
     this.socket.on('offer:peer', this.handleReceivePeerOffer);
+
+    this.socket.on('stream', console.log.bind('stream'))
   }
 
 
@@ -200,6 +202,9 @@ export default class Node {
       ...payload,
       ...(isPrivate && { isPrivate: true }),
     });
+    if (message.target === message.from) {
+      return
+    }
     if (!this.connected) {
       // send message using Server SocketIO
       this.socket.emit('message', message);
@@ -221,6 +226,9 @@ export default class Node {
    */
   private broadcast = async (message: IMessage, isPrivate?: boolean) => {
     // have the host send the message down the tree
+    if (message.target === this.id) {
+      return
+    }
     if (this.isHost) {
       for (const [peerId, peer] of this.peers.entries()) {
         // skip broadcasting back to the node that sent us the message
@@ -279,10 +287,12 @@ export default class Node {
     // trigger any message subscriptions
     this.trigger(message.type, message);
     // send the message to all child nodes
-    if (this.isHost) {
-      this.broadcast(message);
-    } else {
-      this.send(message.type, message.target, message,true)
+    if (message.target !== this.id) {
+      if (this.isHost) {
+        this.broadcast(message);
+      } else {
+        this.send(message.type, message.target, message,true)
+      }
     }
   };
 
@@ -395,6 +405,15 @@ export default class Node {
       },
       isPrivate: true,
     }));
+
+    this.host.send(this.createMessage({
+      type: 'request:video',
+      target: this.host.id,
+      payload: {
+        message: 'Gimme da video!'
+      },
+      isPrivate: true,
+    }));
   };
 
 
@@ -423,6 +442,7 @@ export default class Node {
     // connect to the server and start downloading the stream
     this.id = message.payload.userId
     this.isHost = true
+    console.log('%c You are the host: ', 'background:#ff2b97;color:white;', this.id)
   };
 
   /**
@@ -432,6 +452,7 @@ export default class Node {
   private handleJoinRoom = async (message: IMessage) => {
     this.id = message.payload.userId
     this.isHost = false
+    console.log('%c You are a guest: ', 'background:#ff2b97;color:white;', this.id)
   };
 
   /**
@@ -440,6 +461,7 @@ export default class Node {
    */
   private handleHostChange = (message: IMessage) => {
     console.log('handleHostChange', message)
+    console.log('%c You are now the host: ', 'background:#ff2b97;color:white;', this.id)
     if (message.payload.isHost) {
     }
   };
@@ -447,6 +469,7 @@ export default class Node {
 
   private handleSetAsHost = (message: IMessage) => {
     console.log('handleSetAsHost', message)
+    console.log('You are now the host: ', this.id)
     if (message.payload.isHost) {
       this.isHost = true
       this.host = null

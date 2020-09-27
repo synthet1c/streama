@@ -34,6 +34,10 @@ const WebSocketProvider = ({ children }: WebSocketProps): any => {
     dispatch(action)
   })
 
+  socket.on('stream', (stream) => {
+    console.log('stream', stream)
+  })
+
   sendMessage('message', {
     id: '1',
     createdAt: Date.now(),

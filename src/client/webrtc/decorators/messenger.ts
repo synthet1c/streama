@@ -95,7 +95,6 @@ export const messenger = <T extends { new(...args: any[]): {} }>(
 };
 
 export function onMessage(name: string) {
-  console.log('onMessage(): evaluated');
   return function(
     target,
     propertyKey: string,

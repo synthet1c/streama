@@ -17,6 +17,9 @@ import ClientManager from './classes/ClientManager';
 import Client from './classes/Client';
 import Node from './classes/Node';
 import { DB } from './db/index';
+import fs from "fs";
+import ss from 'socket.io-stream'
+import BSON from 'bson'
 
 console.log(`*******************************************`);
 console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
@@ -75,6 +78,25 @@ io.on('connection', (socket: Socket) => {
     io,
   })
 
+  ss(socket).on('profile-image', function(stream, data) {
+    var filename = path.basename(data.name);
+    stream.pipe(fs.createWriteStream(filename));
+  });
+
+  var stream = ss.createStream();
+  var filename = './assets/frag_bunny.mp4';
+
+  ss(socket).emit('profile-image', stream, {name: filename});
+  fs.createReadStream(filename).pipe(stream);
+
+  socket.on('gimme-da-video', () => {
+    const inFile = fs.createReadStream(filename)
+      .addListener('data', (data) => {
+        console.log('data', data.length)
+        socket.emit('data', data)
+      })
+  })
+
   socket.emit('message', {
     id: Date.now().toString(16),
     createdAt: Date.now(),
@@ -100,3 +122,20 @@ app.use(pagesRouter());
 server.listen(config.SERVER_PORT, () => {
   console.log(`App listening on port ${config.SERVER_PORT}!`);
 });
+
+const l33T = new Uint8Array('LEET'.split('').map(x => x.charCodeAt(0)))
+const buffer = Buffer.from(l33T)
+
+const json = {
+  number: 1337,
+  string: 'LEET',
+  buffer
+}
+
+const bson = BSON.serialize(json)
+const parsed = BSON.deserialize(bson)
+
+console.log({
+  bson,
+  parsed
+})
