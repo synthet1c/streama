@@ -11,6 +11,8 @@ import {
 import Peer from './Peer';
 import Member from './Member';
 import { IMessenger, messenger, onMessage, Subscription } from './decorators/messenger';
+import DataMessage from '../utils/DataMessage';
+import VideoMessage from '../utils/VideoMessage';
 
 export interface ICreateNodeParams {
   socket: Socket
@@ -282,7 +284,13 @@ export default class Node {
    * @param event
    */
   private messageCallback = (event: MessageEvent) => {
-    const message: IMessage = JSON.parse(event.data);
+    let message
+    if (event.data instanceof ArrayBuffer) {
+      message = DataMessage.parseBuffer(event.data, VideoMessage)
+    }
+    else {
+      message = JSON.parse(event.data) as IMessage;
+    }
     console.log('message', message)
     // trigger any message subscriptions
     this.trigger(message.type, message);

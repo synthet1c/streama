@@ -5,6 +5,8 @@ import { Socket } from 'socket.io';
 import { trace } from '../../shared/trace';
 import BSON from 'bson'
 import Buffer from 'buffer'
+import DataMessage from '../utils/DataMessage';
+import VideoMessage from '../utils/VideoMessage';
 
 const tap = fn => x => (fn(x), x);
 
@@ -137,7 +139,10 @@ export default class Peer {
 
   private onMessageCallback(nodeCallback) {
     return function(this: Peer, event: MessageEvent) {
-      const message: IMessage = BSON.deserialize(event.data)
+      let message
+      if (event.data instanceof ArrayBuffer || event.data instanceof Uint8Array) {
+        message: IMessage = DataMessage.parseBuffer(event.data, VideoMessage)
+      }
       // intercept the message
       if (this.messageSubscriptions && typeof this.messageSubscriptions[message.type] !== 'undefined') {
         this.messageSubscriptions[message.type].forEach(event => {

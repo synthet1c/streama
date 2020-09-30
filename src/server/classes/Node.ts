@@ -1,10 +1,12 @@
 import { Socket, Server } from 'socket.io';
-import { Stream } from 'stream';
+import { Stream, Transform } from 'stream';
 import { trace } from '../../shared/trace';
 import ffmpeg from 'fluent-ffmpeg'
 import path from 'path';
 import ss from 'socket.io-stream'
 import * as fs from 'fs';
+import { fileExistsSync } from 'tsconfig-paths/lib/filesystem';
+import VideoMessage from '../utils/VideoMessage';
 
 type SessionID = string
 type UserID = string
@@ -74,7 +76,7 @@ class Room {
   }
 
   public streamVideo() {
-    const stream = ss.createStream()
+    var filename = './assets/frag_bunny.mp4';
     // var proc = ffmpeg(path.resolve(process.cwd(), './assets/keyboardcat.mp4'))
     //   // use the 'flashvideo' preset (located in /lib/presets/flashvideo.js)
     //   // .preset('flashvideo')
@@ -87,7 +89,6 @@ class Room {
     //   })
     //   // save to stream
     //   .pipe(stream, {end:true}); //end = true, close output stream after writing
-    console.log('streamVideo', stream)
     this.io.to(this.host).emit('message', {
       type: 'message',
       origin: 'server',
@@ -99,23 +100,53 @@ class Room {
         message: 'About to start stream',
       },
     })
-    ss(this.socket).on('stream', function(stream, data) {
-      var filename = path.basename(data.name);
-      stream.pipe(fs.createWriteStream(filename));
-    });
 
-    ss(this.socket).emit('stream', stream)
-
-    const readStream = fs.createReadStream(path.resolve(process.cwd(), './assets/keyboardcat.mp4')).pipe(stream)
-
-    readStream.on('open', (arg) => {
-      console.log('readStream:open', arg)
+    const wrapWithVideoMessage = new Transform({
+      transform(chunk, enc, callback) {
+        const message = new VideoMessage({
+          type: 'video',
+          from: 'server',
+          target: 'client',
+          origin: 'server',
+          data: chunk,
+          created: new Date()
+        }).getBuffer()
+        callback(null, message)
+      }
     })
 
-    readStream.on('close', (arg) => {
-      console.log('readStream:close', arg)
+
+    const send = new Transform({
+      transform: (chunk, enc, callback) => {
+        this.socket.emit('stream', chunk)
+        callback(null, chunk)
+      }
     })
-    console.log({ readStream })
+
+
+    console.log('exists', fileExistsSync(path.resolve(process.cwd(), filename)))
+
+    const readStream = fs.createReadStream(path.resolve(process.cwd(), filename))
+      .pipe(wrapWithVideoMessage)
+      .on('data', (data) => {
+        console.log('data')
+        this.socket.emit('data', data)
+      })
+
+    // console.log('readStream', readStream)
+
+    // readStream.on('open', data => {
+    //   this.socket.emit('stream', data)
+    // })
+
+    // readStream.on('error', data => {
+    //   this.socket.emit('stream', data)
+    // })
+    //
+    // readStream.on('data', data => {
+    //   this.socket.emit('stream', data)
+    // })
+
   }
 
 

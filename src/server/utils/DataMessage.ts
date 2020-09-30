@@ -29,8 +29,8 @@ export const types = {
 export interface IDataOptions {
   type?: number
   instance?: any | ((x: any) => any)
-  parser?: any | ((view: DataView, i: number, buffer: ArrayBuffer, l: number) => any)
-  ctor?: any | ((x: any) => Uint8Array | ArrayBuffer)
+  parser?: any | ((view: DataView, i: number, buffer: Buffer, l: number) => any)
+  ctor?: any | ((x: any) => Uint8Array | Buffer)
   byteLength?: number | ((x: any) => number)
 }
 
@@ -65,7 +65,7 @@ export default class DataMessage {
     const keys = Reflect.getMetadata('data:_keys', Object.getPrototypeOf(this)) || []
     // console.log('keys', keys, this)
     let i = 0
-    let buffer = new ArrayBuffer(0)
+    let buffer = Buffer.alloc(0)
 
     for (const key of keys) {
 
@@ -75,10 +75,10 @@ export default class DataMessage {
       const instance = meta.ctor(value)
       const byteLength = callOrReturn(meta.byteLength)(value)
 
-      let property = new ArrayBuffer(0)
+      let property = Buffer.alloc(0)
 
-      const keyBuffer = new ArrayBuffer(2)
-      const keyView = new DataView(keyBuffer)
+      const keyBuffer = Buffer.alloc(2)
+      const keyView = new DataView(keyBuffer.buffer)
 
       keyView.setUint8(0, types.KEY)
       keyView.setUint8(1, key.length)
@@ -87,8 +87,8 @@ export default class DataMessage {
 
       property = _concatBuffers(property, _keyBuffer)
 
-      const description = new ArrayBuffer(5)
-      const view = new DataView(description)
+      const description = Buffer.alloc(5)
+      const view = new DataView(description.buffer)
 
       view.setUint8(0, meta.type)
       view.setUint32(1, byteLength)
@@ -106,7 +106,7 @@ export default class DataMessage {
     return buffer
   }
 
-  static parseBuffer(buffer: Uint8Array | ArrayBuffer, ctor: any) {
+  static parseBuffer(buffer: Uint8Array | Buffer, ctor: any) {
 
     let i = 0
     const view = new DataView('buffer' in buffer && buffer.buffer || buffer)
@@ -175,7 +175,7 @@ const parsers: IParsers = {
     instance: Number,
     parser: (view, i) => view.getUInt8(i),
     ctor: (number: number) => {
-      const buffer = new ArrayBuffer(4)
+      const buffer = new Buffer(4)
       const view = new DataView(buffer)
       view.setUint8(0, number)
       return buffer
@@ -186,7 +186,7 @@ const parsers: IParsers = {
     instance: Number,
     parser: (view, i) => view.getUInt16(i),
     ctor: (number: number) => {
-      const buffer = new ArrayBuffer(4)
+      const buffer = new Buffer(4)
       const view = new DataView(buffer)
       view.setUint16(0, number)
       return buffer
@@ -198,7 +198,7 @@ const parsers: IParsers = {
     parser: (view, i) => view.getUint32(i),
     ctor: (number: number) => {
       return Uint32Array.from([number]).buffer
-      // const buffer = new ArrayBuffer(4)
+      // const buffer = new Buffer(4)
       // const view = new DataView(buffer)
       // view.setUint32(0, number)
       // return buffer
@@ -236,19 +236,19 @@ const callOrReturn = (valOrFn) => (...args: any[]) => {
 }
 
 
-function concatTypedArrays(a: Uint8Array, b: Uint8Array): Uint8Array { // a, b TypedArray of same type
-  const c = new Uint8Array(a.byteLength + b.byteLength);
+function concatTypedArrays(a: Uint8Array, b: Uint8Array): Buffer {
+  const c = Buffer.alloc(a.byteLength + b.byteLength);
   c.set(a, 0);
   c.set(b, a.byteLength);
   return c;
 }
 
 function _concatBuffers(
-  a: TypedArray | ArrayBuffer,
-  b: TypedArray | ArrayBuffer,
-): ArrayBuffer {
+  a: TypedArray | Buffer,
+  b: TypedArray | Buffer,
+): Buffer {
   return concatTypedArrays(
-    new Uint8Array(('buffer' in a) ? a.buffer : a),
-    new Uint8Array(('buffer' in b) ? b.buffer : b),
-  ).buffer;
+    Uint8Array.from(a),
+    Uint8Array.from(b),
+  );
 }

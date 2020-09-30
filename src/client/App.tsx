@@ -27,18 +27,19 @@ import WebRTCProvider from './providers/WebRTC';
 
 // const WebRTCProvider = React.Fragment
 
-import VideoMessage from './utils/DataMessage'
+import VideoMessage from './utils/VideoMessage'
 
 const message = new VideoMessage({
-  type: 'message',
-  message: 'hello',
+  type: 'video',
+  from: 'server',
+  origin: 'server',
+  target: 'server',
   data: new Uint8Array([255, 255, 255, 255, 255, 255, 255, 255]),
   created: Date.now(),
-  id: 44444444,
 })
 
 const buffer = message.getBuffer()
-const parsed = VideoMessage.parseBuffer(buffer)
+const parsed = VideoMessage.parseBuffer(buffer, VideoMessage)
 
 console.log({
   message,
