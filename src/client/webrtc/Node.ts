@@ -1,5 +1,5 @@
-import { Socket } from 'socket.io';
 import { UserID } from './types';
+import io, { Socket } from 'socket.io-client';
 // import DataChannel, { ChannelID } from './DataChannel';
 import {
   ConnectionInfo,
@@ -20,6 +20,9 @@ export interface ICreateNodeParams {
 
 @messenger
 export default class Node {
+
+  /* your open socket to the server */
+  socket: Socket = io('http://localhost:3000')
 
   isHost: boolean;
 
@@ -46,10 +49,6 @@ export default class Node {
 
   /* your user id (matches Socket.ID) */
   id: UserID;
-
-  /* your open socket to the server */
-  socket: Socket;
-
 
   messageSubscriptions: IMessageSubscriptions[];
 
@@ -79,8 +78,8 @@ export default class Node {
    * @param {SocketIO.Socket} socket
    * @private
    */
-  constructor({ socket }: ICreateNodeParams) {
-    this.socket = socket;
+
+  componentDidMount() {
   }
 
 
@@ -88,11 +87,11 @@ export default class Node {
    * @param {ICreateNodeParams} params
    * @returns {Promise<Node>}
    */
-  public static create = (params: ICreateNodeParams): Node => {
+  public static create = (): Node => {
     // initialize socket
     // wait for communication from server
     // create peer connections
-    const node = new Node(params);
+    const node = new Node;
     // pass the resolve function that will fire when the server has joined the Node to a room
     // await node.bindSocketEvents(res);
 
@@ -147,32 +146,6 @@ export default class Node {
 
 
   /**
-   * Data channel can be to the host or to an individual user in a PM for security
-   *
-   * @param userId  user id to connect data channel to
-   */
-  // public async createDataChannel(userId: UserID): Promise<DataChannel> {
-  //   // * find peer in peers
-  //   const peer = await this.getPeer(userId);
-
-  //   const dataChannel = await DataChannel.create({
-  //     peer,
-  //     userId,
-  //     name: 'global',
-  //   });
-  //   this.dataChannels.set(dataChannel.id, dataChannel);
-  //   // * create data channel if it doesn't exist
-  //   return dataChannel;
-  // }
-
-
-  public closeDataChannel(UserID) {
-    // * find peer in peers
-    // * close channel unbind all events
-  }
-
-
-  /**
    * Ensure that all messages have the same shape
    * @param message
    */
@@ -219,6 +192,32 @@ export default class Node {
       await this.broadcast(message);
     }
   };
+
+  public sendData = async (name: string, target: UserID, data: Uint8Array, isPrivate?: boolean) => {
+    const message = new VideoMessage({
+      origin: this.id,
+      from: this.id,
+      target,
+      type: name,
+      data,
+      created: new Date()
+    })
+    if (message.target === message.from) {
+      return
+    }
+    if (!this.connected) {
+      // send message using Server SocketIO
+      this.socket.emit('message', message);
+    } else if (isPrivate) {
+      // send message using WebRTC to an already established peer
+      const peer = await this.getPeer(target);
+      peer.sendData(message.getBuffer());
+    } else {
+      // send message through host network
+      // await this.broadcast(message);
+    }
+
+  }
 
 
   /**
@@ -423,6 +422,15 @@ export default class Node {
       isPrivate: true,
     }));
   };
+
+  public sendHostMessage(name: string, payload ?: any) {
+    this.host.send(this.createMessage({
+      type: name,
+      target: this.host.id,
+      payload,
+      isPrivate: true
+    }))
+  }
 
 
   /**

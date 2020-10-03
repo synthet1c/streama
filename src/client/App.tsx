@@ -22,8 +22,7 @@ import store from './store';
 import { Provider } from 'react-redux';
 import WebSocketProvider from './providers/WebSocket';
 import WebRTCProvider from './providers/WebRTC';
-// import WebRTCProvider from './providers/WebRTCFC2';
-// import WebRTCProvider from './providers/NewWebRTC';
+import CommunicateProvider from './providers/Communicate';
 
 // const WebRTCProvider = React.Fragment
 
@@ -69,7 +68,8 @@ export const App = () => {
 
   return (
     <Provider store={store}>
-      <WebSocketProvider>
+      {/*<CommunicateProvider>*/}
+      {/*<WebSocketProvider>*/}
         <WebRTCProvider>
           <UserContext.Provider value={user}>
             <ThemeProvider theme={theme}>
@@ -146,7 +146,8 @@ export const App = () => {
             </ThemeProvider>
           </UserContext.Provider>
         </WebRTCProvider>
-      </WebSocketProvider>
+      {/*</WebSocketProvider>*/}
+      {/*</CommunicateProvider>*/}
     </Provider>
   );
 };

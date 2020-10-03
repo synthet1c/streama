@@ -3,7 +3,6 @@ import DataChannel, { ChannelID } from './DataChannel';
 import { IMessage, IMessageSubscription, IMessageSubscriptions } from './interfaces';
 import { Socket } from 'socket.io';
 import { trace } from '../../shared/trace';
-import BSON from 'bson'
 import Buffer from 'buffer'
 import DataMessage from '../utils/DataMessage';
 import VideoMessage from '../utils/VideoMessage';
@@ -141,10 +140,11 @@ export default class Peer {
     return function(this: Peer, event: MessageEvent) {
       let message
       if (event.data instanceof ArrayBuffer || event.data instanceof Uint8Array) {
-        message: IMessage = DataMessage.parseBuffer(event.data, VideoMessage)
+        message = DataMessage.parseBuffer(event.data, VideoMessage)
       }
       // intercept the message
       if (this.messageSubscriptions && typeof this.messageSubscriptions[message.type] !== 'undefined') {
+        // @ts-ignore
         this.messageSubscriptions[message.type].forEach(event => {
           event.callback(message);
         });
@@ -240,11 +240,11 @@ export default class Peer {
 
 
   public send(message: IMessage) {
-    this.data.send(BSON.serialize(message));
+    this.data.send(JSON.stringify(message));
   }
 
   public sendData(data: ArrayBuffer) {
-    this.data.send(BSON.serialize(data))
+    this.data.send(data)
   }
 
 
