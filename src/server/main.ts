@@ -8,6 +8,7 @@ import * as config from './config';
 import { createServer } from 'http'
 import socketIO, { Socket } from 'socket.io'
 import dotenv from 'dotenv'
+import nodeMediaServer from './mediaServer'
 
 dotenv.config()
 
@@ -71,3 +72,4 @@ server.listen(config.SERVER_PORT, () => {
   console.log(`App listening on port ${config.SERVER_PORT}!`);
 });
 
+nodeMediaServer.run()

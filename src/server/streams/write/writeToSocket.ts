@@ -7,7 +7,7 @@ interface WriteToSocketParams {
 
 const writeToSocket = ({ socket }: WriteToSocketParams) => new Writable({
   write: (chunk, encoding, callback) => {
-    console.log('writing')
+    // console.log('writing')
     socket.emit('data', chunk);
     callback(null)
   }

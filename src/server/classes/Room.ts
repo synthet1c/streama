@@ -148,10 +148,10 @@ export default class Room {
         host,
         socket,
       });
-      console.log('created room', socket.id, room);
+      // console.log('created room', socket.id, room);
     } else {
       room.addGuest(socket.id);
-      console.log('added guest', socket.id, room);
+      // console.log('added guest', socket.id, room);
     }
     return room
   }
