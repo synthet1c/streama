@@ -6,11 +6,13 @@ import Node from '../webrtc/Node'
 import { IMessage } from '../webrtc/interfaces';
 import VideoMessage from '../utils/VideoMessage';
 import FrameMessage from '../utils/FrameMessage';
+import DataMessage from '../utils/DataMessage';
 
 // Frame data comes directly from the server
 interface FrameData {
   isInit: boolean,
   data: Uint8Array,
+  index: number,
   startByte: number,
   endByte: number,
   timeStart: number,
@@ -23,9 +25,11 @@ interface IVideoMessage {
 
 
 
-class Video extends Component<any, any> {
+export default class Video extends Component<any, any> {
 
   queued: FrameData[] = []
+  cache: FrameData[] = []
+  cacheLength: number = 20
   requested: boolean = false
 
   initFrame: FrameData
@@ -44,21 +48,24 @@ class Video extends Component<any, any> {
 
   constructor(props: any) {
     super(props);
-    this.webrtc = this.context
-    this.socket = this.context.socket
   }
 
   componentDidMount() {
+    this.webrtc = this.context
+    this.socket = this.context.socket
     // request init frame from parent
     // receive stream from parent
     // buffer contents of stream from parent
     this.mediaSource = new MediaSource()
-    this.sourceBuffer = this.mediaSource.addSourceBuffer(this.codec)
-    this.sourceBuffer.addEventListener('updateend', this.flushVideoFrameBuffer)
+    this.videoRef.current.src = window.URL.createObjectURL(this.mediaSource)
+    this.mediaSource.addEventListener('sourceopen', (event) => {
+      this.sourceBuffer = this.mediaSource.addSourceBuffer(this.codec)
+      this.sourceBuffer.addEventListener('updateend', this.flushVideoFrameBuffer)
+    })
+    this.socket.on('data', this.onData)
     this.webrtc.on('request:initFrame', this.requestInitFrame)
     this.webrtc.on('provide:initFrame', this.receiveInitFrame)
-    this.webrtc.on('receive:frame', this.receiveFrame)
-    this.webrtc.sendHostMessage('request:initFrame')
+    this.webrtc.on('provide:frame', this.receiveFrame)
   }
 
   componentWillUnmount() {
@@ -67,40 +74,56 @@ class Video extends Component<any, any> {
     this.sourceBuffer = null
   }
 
-  private flushVideoFrameBuffer() {
+  private flushVideoFrameBuffer = () => {
     if (!this.initFrame || this.sourceBuffer.updating) return
 
+    // concat the pending array buffers and add them to the source buffer all together
     if (this.queued.length) {
-      // concat the pending array buffers and add them to the source buffer all together
+      // remove all the Frames from the queue
+      const frames = this.queued.splice(0, this.queued.length)
 
-      let byteLength = 0
+      this.cache = [...this.cache, ...frames].slice(-this.cacheLength)
+
       // get the total byte size of the queued Frames
-      this.queued.forEach(frame => {
-        byteLength += frame.data.byteLength
-      })
+      const byteLength = frames.reduce((acc, frame) => {
+        return acc + frame.data.byteLength
+      }, 0)
 
-      // create a new Array allocated to the total byte size
-      const bufferArray = new Uint8Array(byteLength)
+      if (frames.length > 1) {
+        // create a new Array allocated to the total byte size
+        const bufferArray = new Uint8Array(byteLength)
 
-      let currLength = 0
-      this.queued.forEach(frame => {
-        bufferArray.set(frame.data, currLength)
-        currLength += frame.data.byteLength
-      })
+        let currLength = 0
+        frames.forEach(frame => {
+          bufferArray.set(new Uint8Array(frame.data), currLength)
+          currLength += frame.data.byteLength
+        })
+        console.log('concat', {
+          length: frames.length,
+          frames,
+          bufferArray,
+          byteLength,
+        })
 
-      // append the entire buffer
-      this.sourceBuffer.appendBuffer(bufferArray)
+        // append the entire buffer
+        this.sourceBuffer.appendBuffer(bufferArray)
+      } else {
+        this.sourceBuffer.appendBuffer(new Uint8Array(frames[0].data))
+
+        console.log('concat', {
+          length: frames.length,
+          frames,
+          byteLength,
+        })
+      }
 
       // save the last frame in the case we need to reconnect
-      this.lastFrame = this.queued[this.queued.length - 1]
-
-      // clear the buffer
-      this.queued = []
+      this.lastFrame = frames[frames.length - 1]
     }
   }
 
 
-  requestInitFrame(message: FrameMessage) {
+  requestInitFrame = (message: FrameMessage) => {
     const data = new VideoMessage({
       type: 'initFrame',
       origin: message.origin,
@@ -109,15 +132,16 @@ class Video extends Component<any, any> {
       data: this.initFrame.data,
       created: new Date(),
     }).getBuffer()
-    this.webrtc.sendData('provide:initFrame', message.origin, data, true)
+    this.webrtc.sendData('provide:initFrame', message.origin, new Uint8Array(data), true)
   }
 
 
-  receiveInitFrame(frame: FrameMessage) {
+  receiveInitFrame = (frame: FrameMessage) => {
     if (!this.initFrame) {
       this.initFrame = {
         isInit: true,
         data: frame.data,
+        index: frame.index,
         startByte: frame.startByte,
         endByte: frame.endByte,
         timeStart: frame.timeStart,
@@ -128,18 +152,27 @@ class Video extends Component<any, any> {
     }
   }
 
-  receiveFrame(frame: FrameMessage) {
-    // check if the frame already exists in the buffer
-    if (!this.initFrame || this.lastFrame.endByte < frame.endByte) {
-      this.queued.push({
-        isInit: false,
-        data: frame.data,
-        startByte: frame.startByte,
-        endByte: frame.endByte,
-        timeStart: frame.timeStart,
-        timeEnd: frame.timeEnd,
-      } as FrameData)
+  onData = (message) => {
+    const frame: any = DataMessage.parseBuffer(message, FrameMessage)
+    if (!this.initFrame) {
+      this.receiveInitFrame(frame)
+    } else {
+      this.receiveFrame(frame)
     }
+    this.webrtc.broadcast(message)
+  }
+
+  receiveFrame = (frame: FrameMessage) => {
+    // check if the frame already exists in the buffer. Note: this could skip frames
+    this.queued.push({
+      isInit: false,
+      data: frame.data,
+      index: frame.index,
+      startByte: frame.startByte,
+      endByte: frame.endByte,
+      timeStart: frame.timeStart,
+      timeEnd: frame.timeEnd,
+    } as FrameData)
     this.flushVideoFrameBuffer()
   }
 

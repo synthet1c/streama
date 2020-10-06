@@ -1,4 +1,4 @@
-import Client from "../../src/server/classes/Client";
+import Client from "../../src/server/classes/unused/Client";
 
 declare namespace Express {
   export interface Request {

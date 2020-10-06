@@ -17,6 +17,9 @@ vidya.tube
 vidyo.tube
 vidyo.stream
 silenced-majority.com
+cmunity.io
+cmmunity.io
+cammunity.io
 
 ## ideas
 add voting worm feature

@@ -7,6 +7,7 @@ export interface FrameMessageProps {
   from: string
   data: Uint8Array
   created: Date | number
+  index: number
   startByte: number
   endByte: number
   timeStart: number
@@ -34,6 +35,9 @@ export default class FrameMessage extends DataMessage {
 
   @data(types.DATE)
   created: Date | number
+
+  @data(types.UNSIGNED_INT_32)
+  index: number
 
   @data(types.UNSIGNED_INT_32)
   startByte: number

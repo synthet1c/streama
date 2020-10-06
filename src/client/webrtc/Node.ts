@@ -13,6 +13,7 @@ import Member from './Member';
 import { IMessenger, messenger, onMessage, Subscription } from './decorators/messenger';
 import DataMessage from '../utils/DataMessage';
 import VideoMessage from '../utils/VideoMessage';
+import FrameMessage from '../utils/FrameMessage';
 
 export interface ICreateNodeParams {
   socket: Socket
@@ -225,7 +226,7 @@ export default class Node {
    * @param message
    * @param isPrivate
    */
-  private broadcast = async (message: IMessage, isPrivate?: boolean) => {
+  public broadcast = async (message: IMessage, isPrivate?: boolean) => {
     // have the host send the message down the tree
     if (message.target === this.id) {
       return
@@ -285,7 +286,7 @@ export default class Node {
   private messageCallback = (event: MessageEvent) => {
     let message
     if (event.data instanceof ArrayBuffer) {
-      message = DataMessage.parseBuffer(event.data, VideoMessage)
+      message = DataMessage.parseBuffer(event.data, FrameMessage)
     }
     else {
       message = JSON.parse(event.data) as IMessage;

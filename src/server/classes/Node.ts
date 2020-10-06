@@ -1,12 +1,5 @@
 import { Socket, Server } from 'socket.io';
-import { Stream, Transform } from 'stream';
-import { trace } from '../../shared/trace';
-import ffmpeg from 'fluent-ffmpeg'
-import path from 'path';
-import ss from 'socket.io-stream'
-import * as fs from 'fs';
-import { fileExistsSync } from 'tsconfig-paths/lib/filesystem';
-import VideoMessage from '../utils/VideoMessage';
+import Room from './Room'
 
 type SessionID = string
 type UserID = string
@@ -21,233 +14,6 @@ export interface IMessage {
   isPrivate: boolean
 }
 
-const peek = (tag: string) => (fn) => (x: any) => {
-  const result = fn(x)
-  console.log('peek', tag, x, result)
-  return result
-}
-
-let rooms = {}
-
-class Room {
-
-  io: Server
-  roomID: string
-  host: string
-  members: string[] = []
-  guests: string[] = []
-  socket: Socket
-
-  constructor(io, roomID, host, socket) {
-    this.io = io
-    this.socket = socket
-    this.roomID = roomID
-    this.host = host
-    this.members.push(host)
-
-    this.messageHost({
-      type: 'createRoom',
-      origin: 'server',
-      target: host,
-      from: 'server',
-      isPrivate: true,
-      created: (new Date()).toISOString(),
-      payload: {
-        isHost: true,
-        userId: host,
-      },
-    })
-
-    this.streamVideo()
-    // this.testStream()
-  }
-
-  public testStream() {
-    ss(this.socket).on('profile-image', function(stream, data) {
-      var filename = path.basename(data.name);
-      stream.pipe(fs.createWriteStream(filename));
-    });
-
-    var stream = ss.createStream();
-    var filename = './assets/aprincenebula.jpg';
-
-    ss(this.socket).emit('profile-image', stream, {name: filename});
-    fs.createReadStream(filename).pipe(stream);
-  }
-
-  public streamVideo() {
-    var filename = './assets/frag_bunny.mp4';
-    // var proc = ffmpeg(path.resolve(process.cwd(), './assets/keyboardcat.mp4'))
-    //   // use the 'flashvideo' preset (located in /lib/presets/flashvideo.js)
-    //   // .preset('flashvideo')
-    //   // setup event handlers
-    //   .on('end', function() {
-    //     console.log('file has been converted succesfully');
-    //   })
-    //   .on('error', function(err) {
-    //     console.log('an error happened: ' + err.message);
-    //   })
-    //   // save to stream
-    //   .pipe(stream, {end:true}); //end = true, close output stream after writing
-    this.io.to(this.host).emit('message', {
-      type: 'message',
-      origin: 'server',
-      target: this.host,
-      from: 'server',
-      isPrivate: true,
-      created: (new Date()).toISOString(),
-      payload: {
-        message: 'About to start stream',
-      },
-    })
-
-    const wrapWithVideoMessage = new Transform({
-      transform(chunk, enc, callback) {
-        const message = new VideoMessage({
-          type: 'video',
-          from: 'server',
-          target: 'client',
-          origin: 'server',
-          data: chunk,
-          created: new Date()
-        }).getBuffer()
-        callback(null, message)
-      }
-    })
-
-
-    const send = new Transform({
-      transform: (chunk, enc, callback) => {
-        this.socket.emit('stream', chunk)
-        callback(null, chunk)
-      }
-    })
-
-
-    console.log('exists', fileExistsSync(path.resolve(process.cwd(), filename)))
-
-    const readStream = fs.createReadStream(path.resolve(process.cwd(), filename))
-      .pipe(wrapWithVideoMessage)
-      .on('data', (data) => {
-        console.log('data')
-        this.socket.emit('data', data)
-      })
-
-    // console.log('readStream', readStream)
-
-    // readStream.on('open', data => {
-    //   this.socket.emit('stream', data)
-    // })
-
-    // readStream.on('error', data => {
-    //   this.socket.emit('stream', data)
-    // })
-    //
-    // readStream.on('data', data => {
-    //   this.socket.emit('stream', data)
-    // })
-
-  }
-
-
-  messageHost(message: IMessage) {
-    this.io.to(this.host).emit(message.type, message)
-  }
-
-  addGuest(guest) {
-    if (!~this.members.indexOf(guest)) {
-      this.members.push(guest)
-    }
-    if (!~this.guests.indexOf(guest)) {
-      this.guests.push(guest)
-    }
-
-    this.io.to(guest).emit('joinRoom', {
-      type: 'joinRoom',
-      origin: 'server',
-      target: guest,
-      from: 'server',
-      isPrivate: true,
-      created: (new Date()).toISOString(),
-      payload: {
-        isHost: false,
-        userId: guest,
-        host: this.host
-      },
-    })
-
-    this.io.to(this.host).emit('addPeer', {
-      type: 'addPeer',
-      origin: 'server',
-      target: this.host,
-      from: 'server',
-      isPrivate: true,
-      created: (new Date()).toISOString(),
-      payload: {
-        guest: guest,
-      },
-    })
-  }
-
-
-  removeUser(user): string[] {
-    const actions = []
-    if (this.host === user) {
-      // reset the host
-      const newHost = this.members.find(x => x !== user)
-      if (!newHost) {
-        this.closeRoom()
-        actions.push('destroyed room')
-        return actions
-      }
-      this.host = newHost
-      this.io.to(this.host).emit('setAsHost', {
-        type: 'setAsHost',
-        origin: 'server',
-        target: this.host,
-        from: 'server',
-        isPrivate: true,
-        created: (new Date()).toISOString(),
-        payload: {
-          isHost: true,
-        },
-      })
-      this.io.emit('hostChange', {
-        type: 'hostChange',
-        origin: 'server',
-        target: null,
-        from: 'server',
-        isPrivate: false,
-        created: (new Date()).toISOString(),
-        payload: {
-          host: this.host
-        },
-      })
-      this.streamVideo()
-      if (~this.guests.indexOf(this.host)) {
-        this.guests.splice(this.guests.indexOf(this.host), 1)
-      }
-      actions.push(`set new host ${newHost}`)
-    }
-
-    if (~this.members.indexOf(user)) {
-      this.members.splice(this.members.indexOf(user), 1)
-      actions.push(`removed member: ${user}`)
-      return actions
-    }
-    if (~this.guests.indexOf(user)) {
-      this.guests.splice(this.guests.indexOf(user), 1)
-      actions.push(`removed guest: ${user}`)
-      return actions
-    }
-    actions.push(`did nothing`)
-    return actions
-  }
-
-  closeRoom() {
-    delete rooms[this.roomID]
-  }
-}
 
 export default class Node {
 
@@ -264,129 +30,72 @@ export default class Node {
   private socket: Socket;
   private io: Server;
 
-  public isRoomHost: boolean = false
+  public isRoomHost: boolean = false;
+  private room: Room
 
   public health: number;
-  public parent: Node;
-  public backup: Node;
-
-  private timer: any;
-  private total: number;
-
-  private _stream: Stream;
-  private _connection: any;
 
   public constructor({
-     sessionId,
-     socket,
-     io,
-     req,
-     res,
-   }) {
+    sessionId,
+    socket,
+    io,
+    req,
+    res,
+  }) {
     this.sessionId = sessionId;
     this.socket = socket;
     this.io = io;
     Node.nodes.set(sessionId, this);
     this.initSocketMessages();
-
-    this.total = 1;
-    // this.timedMessage()
   }
-
-  public timedMessage = () => {
-    this.onMessage({ content: 'interval' });
-    if (this.total++ < 20) {
-      this.timer = setTimeout(this.timedMessage, 1000 + Math.random() * 5000);
-    }
-  };
 
   public initSocketMessages() {
     this.socket.on('message', this.onMessage);
     this.socket.on('healthCheck', this.onHealthCheck);
 
-    const socket = this.socket
-    const io = this.io
+    const socket = this.socket;
+    const io = this.io;
 
     socket.on('createOrJoinRoom', ({ payload }: IMessage) => {
-      let room = rooms[payload.roomID]
-      if (!room) {
-        room = rooms[payload.roomID] = new Room(io, payload.roomID, socket.id, socket)
-        console.log('created room', socket.id, room)
-      } else {
-        room.addGuest(socket.id)
-        console.log('added guest', socket.id, room)
-      }
-    })
-
-
-    socket.on("offer", payload => {
-      console.log('offer', payload, rooms)
-      io.to(payload.target).emit("offer", payload);
+      this.room = Room.createOrJoinRoom({
+        io,
+        roomID: payload.roomID,
+        host: socket.id,
+        socket
+      })
     });
 
-    socket.on("offer:host", payload => {
-      console.log('offer', payload, rooms)
-      io.to(payload.target).emit("offer:host", payload);
+    // Handle webRTC offer
+    socket.on('offer', payload => {
+      io.to(payload.target).emit('offer', payload);
     });
 
-    socket.on("answer", payload => {
-      console.log('answer', payload, rooms)
-      io.to(payload.target).emit("answer", payload);
+    socket.on('offer:host', payload => {
+      io.to(payload.target).emit('offer:host', payload);
     });
 
-    socket.on("new-ice-candidate", payload => {
-      console.log('new-ice-candidate', payload, rooms)
-      io.to(payload.target).emit("new-ice-candidate", payload);
+    socket.on('answer', payload => {
+      io.to(payload.target).emit('answer', payload);
+    });
+
+    socket.on('new-ice-candidate', payload => {
+      io.to(payload.target).emit('new-ice-candidate', payload);
     });
 
     socket.on('disconnect', () => {
-      Object.keys(rooms).forEach(roomID => {
-        console.log('remove user', socket.id, rooms[roomID])
-        const action = rooms[roomID].removeUser(socket.id)
-        console.log(action, socket.id, roomID, rooms)
-      }, {})
-    })
+      if (this.room) {
+        this.room.disconnect(this.socket.id)
+      }
+    });
 
-  }
-
-  public handleJoinRoom = (info) => {
-    if (!this.socket.adapter.rooms[info.room]) {
-      this.isRoomHost = true
-    }
-    this.socket.join(info.room)
-    this.socket.emit('room-joined', {
-      ...info,
-      isRoomHost: this.isRoomHost
-    })
-  }
-
-  public handleOffer = offer => {
-    this.socket.join(offer.room)
-    this.socket.broadcast.emit('offer', offer)
-  };
-
-  public handleAnswer = answer => {
-    if (!this.socket.adapter.rooms[answer.room]) {
-      this.isRoomHost = true
-    }
-    this.socket.join(answer.room)
-    this.socket.broadcast.emit('answer', answer)
-  };
-
-  public handleIceCandidate = candidate => {
-    if (!this.socket.adapter.rooms[candidate.room]) {
-      this.isRoomHost = true
-    }
-    this.socket.join(candidate.room)
-    this.socket.broadcast.emit('new-ice-candidate', candidate)
   }
 
   public onMessage = (message) => {
     console.log('Node:message', message);
     this.io.sockets.emit('message', {
-      id: (Date.now()).toString(16) + '-' + Math.floor(Math.random() * 500) + '-' + this.total,
+      id: (Date.now()).toString(16) + '-' + Math.floor(Math.random() * 500),
       createdAt: Date.now(),
-      content: 'What chu sa to me, huh? ' + this.total,
+      content: 'What chu sa to me, huh?',
       title: 'Reply',
       user: 'AYO',
     });
@@ -395,14 +104,6 @@ export default class Node {
   public onHealthCheck = ({ message }) => {
     console.log('Node:healthCheck', message);
   };
-
-  // public get parent() {
-  //   return Node.parent(this)
-  // }
-  //
-  // public set parent(parent: Node) {
-  //   Node._parents.set(this, parent)
-  // }
 
   public static parent(node) {
     return Node.parents.get(node);
@@ -415,15 +116,6 @@ export default class Node {
   // get assigned to Cluster
 
   // Sort health against siblings
-
-  public async send(event: string, value?: any): Promise<any> {
-    return this._connection.send(event, value);
-  }
-
-  public async stream(stream: Stream): Promise<Stream> {
-    // @ts-ignore
-    return this.stream.pipe(stream);
-  }
 
   public getHealth(): any {
     throw new Error('Method not implemented.');

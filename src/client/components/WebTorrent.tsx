@@ -12,7 +12,7 @@ import React from 'react';
 import { WebTorrent } from 'webtorrent';
 import io, { Socket } from 'socket.io-client';
 import SendIcon from '@material-ui/icons/Send';
-import Video from './Video';
+import Video from './Video2';
 
 interface iWebTorrentState {
   messages: iSocketMessage[]

@@ -4,6 +4,7 @@ import { WebRTCContext } from '../providers/WebRTC';
 import { IMessage } from '../webrtc/interfaces';
 import DataMessage from '../utils/DataMessage';
 import VideoMessage from '../utils/VideoMessage';
+import FrameMessage from '../utils/FrameMessage';
 
 interface IFrame {
   data: ArrayBuffer
@@ -56,7 +57,7 @@ const Video = ({}) => {
       // receive the data from the server socket
       let i = 0
       socket.on('data', (data) => {
-        const message: any = DataMessage.parseBuffer(data, VideoMessage)
+        const message: any = DataMessage.parseBuffer(data, FrameMessage)
         if (!initFrame) {
           initFrame = message
         }

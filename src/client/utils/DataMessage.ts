@@ -173,23 +173,17 @@ const parsers: IParsers = {
   },
   [types.UNSIGNED_INT_8]: {
     instance: Number,
-    parser: (view, i) => view.getUInt8(i),
+    parser: (view, i) => view.getUint8(i),
     ctor: (number: number) => {
-      const buffer = new ArrayBuffer(4)
-      const view = new DataView(buffer)
-      view.setUint8(0, number)
-      return buffer
+      return new Uint8Array(Uint8Array.from([number]).buffer)
     },
-    byteLength: (number) => 2,
+    byteLength: (number) => 1,
   },
   [types.UNSIGNED_INT_16]: {
     instance: Number,
-    parser: (view, i) => view.getUInt16(i),
+    parser: (view, i) => view.getUint16(i),
     ctor: (number: number) => {
-      const buffer = new ArrayBuffer(4)
-      const view = new DataView(buffer)
-      view.setUint16(0, number)
-      return buffer
+      return new Uint8Array(Uint16Array.from([number]).buffer)
     },
     byteLength: (number) => 2,
   },
@@ -197,11 +191,7 @@ const parsers: IParsers = {
     instance: Number,
     parser: (view, i) => view.getUint32(i),
     ctor: (number: number) => {
-      return Uint32Array.from([number]).buffer
-      // const buffer = new ArrayBuffer(4)
-      // const view = new DataView(buffer)
-      // view.setUint32(0, number)
-      // return buffer
+      return new Uint8Array(Uint16Array.from([number]).buffer)
     },
     byteLength: (number) => 4,
   },
