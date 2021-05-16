@@ -67,9 +67,11 @@
     }
   },
   "dependencies": {
+    "@algo-js/heap-tree": "^1.1.5",
     "@material-ui/icons": "^4.9.1",
     "@material-ui/lab": "^4.0.0-alpha.56",
     "@reduxjs/toolkit": "^1.4.0",
+    "@ryder_brooks/binary-heap": "^1.0.0",
     "@typegoose/typegoose": "^7.3.5",
     "@types/bson": "^4.0.2",
     "@types/express-session": "^1.17.0",
@@ -87,6 +89,7 @@
     "find-up": "^4.1.0",
     "moment": "^2.28.0",
     "mongoose": "^5.10.5",
+    "ngeohash": "^0.6.3",
     "prop-types": "^15.7.2",
     "react-feather": "^2.0.8",
     "react-helmet": "^6.1.0",

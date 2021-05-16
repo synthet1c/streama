@@ -10,6 +10,9 @@ export default class ChannelModel {
   @prop({ required: true, unique: true })
   slug!: string;
 
+  @prop()
+  live?: boolean;
+
   @prop({ ref: () => User, required: true })
   public owner!: Ref<typeof User>;
 

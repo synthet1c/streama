@@ -17,7 +17,7 @@ const Video = ({}) => {
   const webrtc = useContext(WebRTCContext)
   const socket = webrtc.socket
   const videoRef = useRef<HTMLVideoElement>()
-  const codec = 'video/mp4; codecs="avc1.42E01E, mp4a.40.2'
+  const codec = 'video/mp4; codecs="avc1.42e01e, mp4a.40.2"'
 
   useEffect(() => {
     const mediaSource = new MediaSource()

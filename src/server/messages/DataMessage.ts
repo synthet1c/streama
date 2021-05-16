@@ -83,9 +83,9 @@ export default class DataMessage {
       keyView.setUint8(0, types.KEY)
       keyView.setUint8(1, key.length)
 
-      const _keyBuffer = _concatBuffers(keyBuffer, parsers[types.KEY].ctor(key))
+      const _keyBuffer = concatBuffers(keyBuffer, parsers[types.KEY].ctor(key))
 
-      property = _concatBuffers(property, _keyBuffer)
+      property = concatBuffers(property, _keyBuffer)
 
       const description = Buffer.alloc(5)
       const view = new DataView(description.buffer)
@@ -93,12 +93,12 @@ export default class DataMessage {
       view.setUint8(0, meta.type)
       view.setUint32(1, byteLength)
 
-      const TLV = _concatBuffers(description, instance)
+      const TLV = concatBuffers(description, instance)
 
-      property = _concatBuffers(property, TLV)
+      property = concatBuffers(property, TLV)
 
       // add all the properties to the buffer
-      buffer = _concatBuffers(buffer, property)
+      buffer = concatBuffers(buffer, property)
 
       i = buffer.byteLength
     }
@@ -233,7 +233,7 @@ function concatTypedArrays(a: Uint8Array, b: Uint8Array): Buffer {
   return c;
 }
 
-function _concatBuffers(
+export function concatBuffers(
   a: TypedArray | Buffer,
   b: TypedArray | Buffer,
 ): Buffer {

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { DB } from '../../db/index';
 import { User } from '../../models/User';
+import Channel from '../../classes/Channel';
 
 export const router = Router();
 
@@ -97,4 +98,3 @@ router.get('/:slug', async (req: Request, res: Response) => {
       });
   }
 });
-

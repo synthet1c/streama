@@ -23,6 +23,7 @@ export class DB {
       useNewUrlParser: true,
       useUnifiedTopology: true,
       useCreateIndex: true,
+      useFindAndModify: false,
       autoIndex: process.env.NODE_ENV === 'development',
     })
     this._db = connection;

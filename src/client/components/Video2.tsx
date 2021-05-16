@@ -32,6 +32,8 @@ export default class Video extends Component<any, any> {
   cacheLength: number = 20
   requested: boolean = false
 
+  q: number = 0
+
   initFrame: FrameData
   lastFrame: FrameData
 
@@ -42,7 +44,11 @@ export default class Video extends Component<any, any> {
   mediaSource: MediaSource
   sourceBuffer: SourceBuffer
 
-  codec = 'video/mp4; codecs="avc1.42E01E, mp4a.40.2'
+  // codec = 'video/mp4; codecs="avc1.42E01E, mp4a.40.2'
+
+  // codec = 'video/webm; codecs="vorbis,vp9"'
+  // codec = 'av01.P.LLT.DD[.M[.CCC[.cp[.tc[.mc[.F]]]]]]'
+  codec = 'video/mp4; codecs=avc1.42E01E, mp4a.40.2'
 
   static contextType = WebRTCContext
 
@@ -60,12 +66,19 @@ export default class Video extends Component<any, any> {
     this.videoRef.current.src = window.URL.createObjectURL(this.mediaSource)
     this.mediaSource.addEventListener('sourceopen', (event) => {
       this.sourceBuffer = this.mediaSource.addSourceBuffer(this.codec)
+      this.sourceBuffer.mode = 'sequence'
+
       this.sourceBuffer.addEventListener('updateend', this.flushVideoFrameBuffer)
+      this.sourceBuffer.addEventListener('error', this.onError)
     })
     this.socket.on('data', this.onData)
     this.webrtc.on('request:initFrame', this.requestInitFrame)
     this.webrtc.on('provide:initFrame', this.receiveInitFrame)
     this.webrtc.on('provide:frame', this.receiveFrame)
+  }
+
+  onError = e => {
+    console.error('sourcebuffer:error', e)
   }
 
   componentWillUnmount() {
@@ -108,13 +121,12 @@ export default class Video extends Component<any, any> {
         // append the entire buffer
         this.sourceBuffer.appendBuffer(bufferArray)
       } else {
-        this.sourceBuffer.appendBuffer(new Uint8Array(frames[0].data))
-
-        console.log('concat', {
+        console.log('singleFrame', {
           length: frames.length,
           frames,
           byteLength,
         })
+        this.sourceBuffer.appendBuffer(frames[0].data)
       }
 
       // save the last frame in the case we need to reconnect
@@ -137,6 +149,7 @@ export default class Video extends Component<any, any> {
 
 
   receiveInitFrame = (frame: FrameMessage) => {
+    console.log('initFrame', { frame })
     if (!this.initFrame) {
       this.initFrame = {
         isInit: true,
@@ -159,6 +172,7 @@ export default class Video extends Component<any, any> {
     } else {
       this.receiveFrame(frame)
     }
+    this.q++
     this.webrtc.broadcast(message)
   }
 
